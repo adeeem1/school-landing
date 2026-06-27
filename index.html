@@ -79,13 +79,15 @@ a{text-decoration:none;color:inherit}
 .form-card p{color:#64748b;margin-bottom:2rem;font-size:15px}
 .form-group{margin-bottom:1.2rem}
 .form-group label{display:block;font-size:14px;font-weight:600;color:#374151;margin-bottom:6px}
-.form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px;font-family:inherit;transition:border 0.2s;direction:rtl;background:#fff;color:#1a1a2e}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:15px;font-family:inherit;transition:border 0.2s;direction:rtl}
 .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#1d9e75}
 .form-group textarea{height:100px;resize:vertical}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .btn-submit{width:100%;padding:14px;background:#1d9e75;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s;margin-top:0.5rem;font-family:inherit}
 .btn-submit:hover{background:#0f6e56;transform:translateY(-1px)}
+.btn-submit:disabled{background:#ccc;cursor:not-allowed;transform:none}
 .success-msg{display:none;background:#e1f5ee;border:1px solid #1d9e75;border-radius:8px;padding:1rem;text-align:center;color:#0f6e56;font-weight:600;margin-top:1rem}
+.error-msg{display:none;background:#fee;border:1px solid #f87171;border-radius:8px;padding:1rem;text-align:center;color:#dc2626;font-weight:600;margin-top:1rem}
 
 /* TESTIMONIAL */
 .testimonial-section{padding:5rem 2rem;text-align:center}
@@ -128,7 +130,7 @@ footer{background:#1a1a2e;color:rgba(255,255,255,0.5);text-align:center;padding:
 <section class="hero">
   <div class="badge">✦ مصمم خصيصاً للمدارس الجزائرية</div>
   <h1>أدِر مدرستك بـ<span> ذكاء واحترافية</span> حقيقية</h1>
-  <p>نظام متكامل لإدارة الطلاب والأساتذة، احتساب المستحقات تلقائياً، وطباعة الوصولات في ثانية واحدة — بدون تعقيد.</p>
+  <p>نظام متكامل لإدارة الطلاب والأساتذة، احتساب المستحقات تلقائياً، وطباعة الوصولات في ثانية واحدة — بدون تعقيدات.</p>
   <div class="btn-group">
     <button class="btn-primary" onclick="document.getElementById('trial-form').scrollIntoView({behavior:'smooth'})">
       ▶ جرب مجاناً 14 يوم
@@ -268,6 +270,9 @@ footer{background:#1a1a2e;color:rgba(255,255,255,0.5);text-align:center;padding:
       <div class="success-msg" id="successMsg">
         ✅ تم إرسال طلبك بنجاح! سنتواصل معك خلال 24 ساعة.
       </div>
+      <div class="error-msg" id="errorMsg">
+        ❌ حدث خطأ في إرسال الطلب. يرجى المحاولة مرة أخرى.
+      </div>
     </form>
   </div>
 </section>
@@ -279,7 +284,7 @@ footer{background:#1a1a2e;color:rgba(255,255,255,0.5);text-align:center;padding:
     <h2 style="margin-bottom:2rem;font-size:2rem">ماذا يقول أصحاب المدارس؟</h2>
     <div class="testimonial">
       <div class="stars">★★★★★</div>
-      <p>"قبل هذا النظام كنت أقضي يومين كاملين في حساب مستحقات الأساتذة آخر كل شهر. الآن الأمر لا يستغرق سوى دقائق وبدون أي أخطاء. أنصح به كل مدير مدرسة خاصة."</p>
+      <p>"قبل هذا النظام كنت أقضي يومين كاملين في حساب مستحقات الأساتذة آخر كل شهر. الآن الأمر لا يستغرق سوى دقائق معدودة!"</p>
       <div class="author">— مدير مركز دعم مدرسي، سطيف</div>
     </div>
   </div>
@@ -309,22 +314,50 @@ footer{background:#1a1a2e;color:rgba(255,255,255,0.5);text-align:center;padding:
 function submitForm(e) {
   e.preventDefault();
   const form = e.target;
-  const data = {
-    name: form.name.value,
-    phone: form.phone.value,
-    school: form.school.value,
-    wilaya: form.wilaya.value,
-    type: form.type.value,
-    notes: form.notes.value,
-    date: new Date().toLocaleString('ar-DZ')
-  };
-  console.log('طلب جديد:', data);
-  // هنا يمكن إرسال البيانات إلى EmailJS أو Formspree
-  document.getElementById('successMsg').style.display = 'block';
-  form.reset();
-  setTimeout(() => {
-    document.getElementById('successMsg').style.display = 'none';
-  }, 5000);
+  const submitBtn = form.querySelector('.btn-submit');
+  const successMsg = document.getElementById('successMsg');
+  const errorMsg = document.getElementById('errorMsg');
+  
+  // Hide messages
+  successMsg.style.display = 'none';
+  errorMsg.style.display = 'none';
+  
+  // Disable button and show loading state
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'جاري الإرسال...';
+  
+  const data = new FormData(form);
+  
+  // Send to Formspree
+  fetch('https://formspree.io/f/xgojyann', {
+    method: 'POST',
+    body: data,
+    headers: {
+      'Accept': 'application/json'
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      successMsg.style.display = 'block';
+      form.reset();
+      submitBtn.textContent = 'إرسال الطلب — التجربة مجانية تماماً ✓';
+      submitBtn.disabled = false;
+      setTimeout(() => {
+        successMsg.style.display = 'none';
+      }, 5000);
+    } else {
+      throw new Error('Form submission failed');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    errorMsg.style.display = 'block';
+    submitBtn.textContent = 'إرسال الطلب — التجربة مجانية تماماً ✓';
+    submitBtn.disabled = false;
+    setTimeout(() => {
+      errorMsg.style.display = 'none';
+    }, 5000);
+  });
 }
 </script>
 </body>
